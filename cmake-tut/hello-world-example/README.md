@@ -9,3 +9,5 @@ To build this under Linux you can do:
     cmake --build .
 
 This will create the *hello-world* executable in the *build* subdirectory.
+
+[GitHub Markdown tips](https://docs.github.com/en/free-pro-team@latest/github/writing-on-github/basic-writing-and-formatting-syntax)
