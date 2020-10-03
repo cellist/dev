@@ -1,5 +1,15 @@
 #include "word_frequency.h"
 
+WordFrequency::WordFrequency() {
+  std::cout << "Word frequency object " << this
+	    << " is instantiated." << std::endl;
+}
+
+WordFrequency::~WordFrequency() {
+  std::cout << "Word frequency instance " << this
+	    << " is being discarded." << std::endl;
+}
+
 void WordFrequency::ingest(const char* inputFilename) {
   std::ifstream someFile;
   std::string   someWord, cleansedWord;
@@ -11,7 +21,7 @@ void WordFrequency::ingest(const char* inputFilename) {
 	      << " has been opened successfully." << std::endl;
     
     while(someFile >> someWord) {
-      myWordCount++;
+      this->wordCount++;
       // convert current word to lower case
       std::transform(someWord.begin(),
 		     someWord.end(),
@@ -27,10 +37,10 @@ void WordFrequency::ingest(const char* inputFilename) {
 		   [](char ch) { return isalnum(ch); });
 	
       // adjust frequency with cleansed word
-      if(myFrequencies.find(cleansedWord) == myFrequencies.end()) {
-	myFrequencies.insert(make_pair(cleansedWord, 1));
+      if(this->frequencies.find(cleansedWord) == this->frequencies.end()) {
+	this->frequencies.insert(make_pair(cleansedWord, 1));
       } else {
-	myFrequencies[cleansedWord]++;
+	this->frequencies[cleansedWord]++;
       }
       
       cleansedWord.erase(cleansedWord.begin(),cleansedWord.end());
@@ -42,11 +52,11 @@ void WordFrequency::ingest(const char* inputFilename) {
 
 void WordFrequency::report() {  
   // do the reporting
-  std::cout << "Input file had " << myWordCount
-	    << " words in it, " << myFrequencies.size()
+  std::cout << "Input file had " << this->wordCount
+	    << " words in it, " << this->frequencies.size()
 	    << " of them were different." << std::endl;
   
-  for(auto& freqPairs : myFrequencies) {
+  for(auto& freqPairs : this->frequencies) {
     std::cout << freqPairs.first << ": " << freqPairs.second << std::endl;
   }
 }

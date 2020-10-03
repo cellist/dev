@@ -12,12 +12,14 @@ class WordFrequency {
   
 private:
   // auxiliary map to compute the frequencies of individual words in input
-  std::map<std::string, int> myFrequencies;
-  int                        myWordCount = 0;
+  std::map<std::string, int> frequencies;
+  int                        wordCount = 0;
   
 public:
+  WordFrequency(); // standard class constructor
   void ingest(const char* inputFilename);
   void report();
+  ~WordFrequency(); // standard class destructor
 };
 
 #endif // WORD_FREQUENCY_H
