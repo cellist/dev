@@ -12,3 +12,16 @@ To get this going, do:
     cd build
     cmake ..
     cmake --build .
+
+You can afterwards also do:
+
+    cd build
+	make doxygen
+	
+now, in case you have (doxygen)[https://www.doxygen.nl/index.html]
+available on your system.
+
+With the input files provided, you can try:
+
+    ./build/text-analysis fox.txt
+	./build/text-analysis

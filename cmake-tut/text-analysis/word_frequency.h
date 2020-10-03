@@ -8,18 +8,35 @@
 #include <algorithm>
 #include <map>
 
+/**
+ * A word frequency calculator class
+ */
 class WordFrequency {
   
 private:
-  // auxiliary map to compute the frequencies of individual words in input
+  /// @param frequencies auxiliary map to compute the frequencies of individual words in input
   std::map<std::string, int> frequencies;
+  
+  /// @param wordCount keeping track of all words found in input
   int                        wordCount = 0;
   
 public:
-  WordFrequency(); // standard class constructor
+  /// standard class constructor
+  WordFrequency();
+
+  /**
+   * Analyse a text file
+   * @param inputFilename the path to the input text file
+   */
   void ingest(const char* inputFilename);
+
+  /**
+   * Report on the result of the text file analysis
+   */
   void report();
-  ~WordFrequency(); // standard class destructor
+  
+  /// standard class destructor
+  ~WordFrequency();
 };
 
 #endif // WORD_FREQUENCY_H
