@@ -7,6 +7,7 @@ practical C++ development. I have to confess this is also a recap of
 OOP in C++ for me :blush:.
 
 To get this going, do:
+
     mkdir build
     cd build
     cmake ..
