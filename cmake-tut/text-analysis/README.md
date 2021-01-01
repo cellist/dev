@@ -18,8 +18,9 @@ You can afterwards also do:
     cd build
 	make doxygen
 	
-now, in case you have [doxygen](https://www.doxygen.nl/index.html)
-available on your system.
+now, in case you have [doxygen](https://www.doxygen.nl/index.html) and
+the [graphviz](https://graphviz.org/) package installed on your
+system.
 
 With the input files provided, you can try:
 
