@@ -1,10 +1,10 @@
 /*
-** Decompose integer numbers into their factors
+** Decompose integer numbers into their prime factors
 */
 
 #include <iostream>
 
-void decompose(int& num, int start) {
+void decompose(long int& num, long int start) {
 
   for(; start*start <= num; start++) {
     if(num%start == 0) {
@@ -19,7 +19,8 @@ void decompose(int& num, int start) {
 int main(int argc, char* argv[]) {
 
   const char prompt[] = "Enter a non-negative number to calculate its factors: ";
-  int num, iterations = 0;
+  long int num;
+  int iterations = 0;
 
   std::cout << prompt;
   while(std::cin >> num) {
