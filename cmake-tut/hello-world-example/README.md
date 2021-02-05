@@ -1,5 +1,5 @@
 I am assessing the use of cmake for C++ projects at the moment.
-This is my first try at level one, so to say (having just one source file).
+This is my first try at level one, so to say (having just two files).
 
 To build this under Linux you can do:
 
