@@ -8,6 +8,13 @@ project(main_test VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Add code coverage compilation flags
+set(CXX_COVERAGE_COMPILE_FLAGS "-fprofile-instr-generate -fcoverage-mapping")
+#set(CXX_COVERAGE_LINK_FLAGS "-coverage -lgcov")
+
+set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${CXX_COVERAGE_COMPILE_FLAGS}" )
+#set( CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} ${CXX_COVERAGE_LINK_FLAGS}" )
+
 add_executable(
   main_test
   main_test.cpp
