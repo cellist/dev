@@ -1,4 +1,7 @@
 #include <gtest/gtest.h>
+
+#define _HAVE_MAIN_
+
 #include "main.cpp"
 
 TEST(GreaterTest,AisGreater){

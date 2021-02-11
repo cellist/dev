@@ -17,12 +17,13 @@ int GreatestOfThree(int a,int b,int c) {
 
 // After checking for correctness comment main function to test //main_test.cpp
 
-// int main() {
-// 
-//  // your code goes here
-//  int a,b,c;
-//  
-//  cin >> a >> b>> c;
-//  cout << GreatestOfThree(a,b,c) << endl;
-//  return 0;
-// }
+#ifndef _HAVE_MAIN_
+int main() {
+  // your code goes here
+ int a,b,c;
+ 
+ cin >> a >> b>> c;
+ cout << GreatestOfThree(a,b,c) << endl;
+ return 0;
+}
+#endif // #ifndef _HAVE_MAIN_
