@@ -15,11 +15,14 @@ mkdir -p build
 
 cd build/ &&\
     env CC=/usr/bin/clang CXX=/usr/bin/clang++ cmake .. &&\
-    cmake -DCMAKE_CXX_FLAGS=-pg -DCMAKE_BUILD_TYPE=Debug --build . &&\
+    cmake -DCMAKE_CXX_FLAGS="-pg -fprofile-instr-generate -fcoverage-mapping" \
+	  -DCMAKE_BUILD_TYPE=Debug --build . &&\
     make &&\
-    ./books &&\
+    env LLVM_PROFILE_FILE="books.profraw" ./books &&\
     gprof -b ./books ./gmon.out |\
 	gprof2dot |\
 	dot -Tpng -o ./gprof.png &&\
     cd .. &&\
-    xli ./build/gprof.png
+    xli ./build/gprof.png &&\
+    llvm-profdata merge -sparse ./build/books.profraw -o ./build/books.profdata &&\
+    llvm-cov show ./build/books -instr-profile=./build/books.profdata | xless
