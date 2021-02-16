@@ -7,5 +7,5 @@ find_package(Boost COMPONENTS python)
 include_directories(${Boost_INCLUDE_DIR} ${PYTHON_INCLUDE_DIRS})
 link_directories(${Boost_LIBRARY_DIR})
 
-python_add_module(pylib pylib.cpp)
+python_add_module(pylib pylib.cpp Bonjour.cpp)
 target_link_libraries(pylib ${Boost_LIBRARIES} ${PYTHON_LIBRARIES})
