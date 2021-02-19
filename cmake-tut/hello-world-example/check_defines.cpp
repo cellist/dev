@@ -1,11 +1,11 @@
 #include <iostream>
 #include <iomanip>
-#include <string>
+#include <string.h>
 
 int main() {
 
   const struct define_status {
-    std::string name;
+    const char* name;
     bool        defined;
   } checklist[] = {
 		   { "__cplusplus",
@@ -15,8 +15,36 @@ int main() {
 		     false
 		     #endif
 		   },
+		   { "__gnu_linux__",
+		     #ifdef __gnu_linux__
+		     true
+		     #else
+		     false
+		     #endif
+		   },
+		   { "__linux",
+		     #ifdef __linux
+		     true
+		     #else
+		     false
+		     #endif
+		   },
+		   { "__linux__",
+		     #ifdef __linux__
+		     true
+		     #else
+		     false
+		     #endif
+		   },
 		   { "__GNUC__",
 		     #ifdef __GNUC__
+		     true
+		     #else
+		     false
+		     #endif
+		   },
+		   { "__STDC__",
+		     #ifdef __STDC__
 		     true
 		     #else
 		     false
@@ -148,6 +176,13 @@ int main() {
 		     false
 		     #endif
 		   },
+		   { "linux",
+		     #ifdef linux
+		     true
+		     #else
+		     false
+		     #endif
+		   },
 		   { "STDC",
 		     #ifdef STDC
 		     true
@@ -157,6 +192,13 @@ int main() {
 		   },
 		   { "SYS16BIT",
 		     #ifdef SYS16BIT
+		     true
+		     #else
+		     false
+		     #endif
+		   },
+		   { "unix",
+		     #ifdef unix
 		     true
 		     #else
 		     false
@@ -180,7 +222,7 @@ int main() {
   };
 
   std::cout << "CHECKING FOR SOME DEFINES:" << std::endl;
-  for(int i; !checklist[i].name.empty(); i++) {
+  for(int i; strlen(checklist[i].name); i++) {
     std::cout << std::setw(3) << std::right << i << ": "
 	      << std::setw(23) << std::left << checklist[i].name
 	      << (checklist[i].defined ? " is" : " is _NOT_")
