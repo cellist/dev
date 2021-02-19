@@ -1,13 +1,27 @@
 #include <iostream>
 #include <iomanip>
-#include <string.h>
+#include <string>
+
+/*
+** You can ask the preprocessor directly like so:
+** - echo | clang++ -x c++ -std=c++11 -dM -E - | sort -u
+** - echo | g++ -x c++ -std=c++11 -dM -E - | sort -u
+*/
+typedef struct define_status {
+    std::string name;
+    bool        defined;
+} define_status_t;
 
 int main() {
 
-  const struct define_status {
-    const char* name;
-    bool        defined;
-  } checklist[] = {
+  const define_status_t checklist[] = {
+		   { "__clang__",
+		     #ifdef __clang__
+		     true
+		     #else
+		     false
+		     #endif
+		   },
 		   { "__cplusplus",
 		     #ifdef __cplusplus
 		     true
@@ -31,6 +45,13 @@ int main() {
 		   },
 		   { "__linux__",
 		     #ifdef __linux__
+		     true
+		     #else
+		     false
+		     #endif
+		   },
+		   { "__llvm__",
+		     #ifdef __llvm__
 		     true
 		     #else
 		     false
@@ -217,12 +238,11 @@ int main() {
 		     #else
 		     false
 		     #endif
-		   },
-		   { "", false }
+		   }
   };
 
   std::cout << "CHECKING FOR SOME DEFINES:" << std::endl;
-  for(int i; strlen(checklist[i].name); i++) {
+  for(int i = 0; i < sizeof(checklist) / sizeof(define_status_t); i++) {
     std::cout << std::setw(3) << std::right << i << ": "
 	      << std::setw(23) << std::left << checklist[i].name
 	      << (checklist[i].defined ? " is" : " is _NOT_")
