@@ -9,7 +9,8 @@ cd build &&\
     make
 cd ..
 
-[ -f ./build/hello-world ] && ./build/hello-world
+[ -f ./build/hello-world ] &&\
+    env LLVM_PROFILE_FILE="./build/hello-world.profraw" ./build/hello-world
 
 [ -f ./build/check-defines ] &&\
     env LLVM_PROFILE_FILE="./build/check-defines.profraw" ./build/check-defines &&\
