@@ -1,12 +1,17 @@
+#include <log4cplus/configurator.h>
+
 #include "dialog.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
-    Dialog w;
-    w.setWindowTitle("Loopback Dialog Example");
-    w.show();
+  log4cplus::BasicConfigurator config;
+  config.configure();
 
-    return a.exec();
+  QApplication a(argc, argv);
+  Dialog w;
+  w.setWindowTitle("Loopback Dialog Example");
+  w.show();
+  
+  return a.exec();
 }

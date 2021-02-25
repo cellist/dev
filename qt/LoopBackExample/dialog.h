@@ -9,6 +9,8 @@
 #include <QProgressBar>
 #include <QMessageBox>
 
+#include <log4cplus/logger.h>
+
 namespace Ui {
 class Dialog;
 }
@@ -49,6 +51,7 @@ private:
     QTcpSocket tcpClient;
     QTcpSocket *tcpServerConnection;
 
+    log4cplus::Logger logger;
     int bytesToWrite;
     int bytesWritten;
     int bytesReceived;
