@@ -19,3 +19,11 @@ cd ..
 
 # Ask preprocessor about known macros
 # echo | cpp -dM | sort -u
+
+[ -f ./build/cli_param ] &&\
+    env LLVM_PROFILE_FILE="./build/cli_param.profraw" \
+	./build/cli_param --add --append --create create_this \
+	--delete delete_this --file some_file --verbose --help \
+	hello, world &&\
+    llvm-profdata merge -sparse ./build/cli_param.profraw -o ./build/cli_param.profdata &&\
+    llvm-cov show ./build/cli_param -instr-profile=./build/cli_param.profdata

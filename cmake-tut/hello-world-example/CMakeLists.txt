@@ -4,3 +4,4 @@ project(hello_world)
 
 add_executable(hello-world hello_world.cpp greeter.cpp)
 add_executable(check-defines check_defines.cpp)
+add_executable(cli_param cli_param.cpp)
