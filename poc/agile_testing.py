@@ -1,13 +1,20 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 
-from ctypes import cdll
+from ctypes import cdll, c_double, byref
 
 if __name__ == '__main__':
     libc = cdll.LoadLibrary("libc.so.6")
 
-    t0 = libc.time(None)
-    answer = libc.printf(b"Printing through libc...\n")
-    print(f"libc system call (printf) returned {answer}.")
-    answer = libc.sleep(3)
-    t1 = libc.time(None)
-    print(f"Libc call to sleep(3) returned {answer}, time elapsed is {t1-t0}s.")
+    dt = libc.time(None)
+    pie = c_double()
+    libc.sscanf(str(22.0/7), "%lf", byref(pie))
+    answer = libc.printf(
+        b"Terminal output through libc ... PI is close to %lf.\n",
+        pie
+    )
+    print("libc system call (printf) returned %d." % answer)
+    answer = libc.sleep(2)
+    dt -= libc.time(None)
+    print("libc call to sleep(2) returned %d, time elapsed is %ds." %\
+          (answer, -dt)
+    )
