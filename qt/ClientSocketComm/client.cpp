@@ -1,5 +1,6 @@
 #include "client.h"
 #include <stdlib.h>
+#include <QHostInfo>
 #include <QThread>
 #include <QtDebug>
 
@@ -17,20 +18,25 @@ Client::~Client()
 
 void Client::connectAndSend(Context& ctx)
 {
-  QString host = ctx.getHost();
-  quint16 port = ctx.getPort();
+  QHostInfo host = QHostInfo::fromName(ctx.getHost());
+  quint16 port   = ctx.getPort();
   quint16 millis = ctx.getWaitMS();
 
-  qDebug() << "Trying to connect to " << host << ":" << port;
+  if(host.error() != QHostInfo::NoError) {
+    qDebug() << "The hostname dns lookup has failed or ip address invalid.";
+    return;
+  }
+  
+  qDebug() << "Trying to connect to " << host.hostName() << ":" << port;
 
-  mySocket->connectToHost(host, port);
+  mySocket->connectToHost(host.hostName(), port);
 
   if (mySocket->waitForConnected(millis)) {
-    qDebug() << "Connected to " << host << ":" << port;
+    qDebug() << "Connected to " << host.hostName() << ":" << port;
 
     this->sendMessages(ctx);
     mySocket->close();
-    qDebug() << "Disconnected.";
+    qDebug() << "Disconnected from " << host.hostName() << ".";
 
   } else {
     qDebug() << "Connection timed out!";
