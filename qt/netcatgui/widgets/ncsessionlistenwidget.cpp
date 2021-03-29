@@ -121,16 +121,17 @@ void NcSessionListenWidget::hostDisconnect()
 
 void NcSessionListenWidget::hostConnectionError(QAbstractSocket::SocketError socketError)
 {
-    hostDisconnect();
+  QString connectionProblem = hostConnection->errorString();
+  hostDisconnect();
 
-    if (socketError == QTcpSocket::RemoteHostClosedError){
-        QMessageBox::critical(this, tr("Connection closed"), tr("The remote host closed the connection."));
-        return;
-    }
+  if (socketError == QTcpSocket::RemoteHostClosedError){
+    QMessageBox::critical(this, tr("Connection closed"), tr("The remote host closed the connection."));
+    return;
+  }
 
-    QMessageBox::critical(this, tr("Network error"),
-                                  tr("The following network error occurred: %1.")
-                                  .arg(hostConnection->errorString()));
+  QMessageBox::critical(this, tr("Network error"),
+			tr("The following network error occurred: %1.")
+			.arg(connectionProblem));
 }
 
 void NcSessionListenWidget::acceptConnection()

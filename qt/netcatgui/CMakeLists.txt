@@ -11,6 +11,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt5 COMPONENTS Core Gui Widgets Network REQUIRED)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
 add_executable(ncgui
   ./widgets/ncsessionconnectwidget.cpp
