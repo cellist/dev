@@ -7,9 +7,8 @@
 Client::Client() {
 
   mySocket = new QTcpSocket(this);
-  qDebug() << "Initialized client with TCP socket";
+  qDebug() << "Initialized client with TCP socket.";
 }
-
 
 Client::~Client()
 {
@@ -20,7 +19,7 @@ void Client::sendAndDisengage(QString& host, Context& ctx) {
 
   uint port = ctx.getPort();
   
-  qDebug() << "Connected to " << host << ":" << port;
+  qDebug() << "Connected to " << host << ":" << port << ".";
   
   this->sendMessages(ctx);
   mySocket->close();
@@ -33,7 +32,7 @@ void Client::connectAndSend(Context& ctx)
   uint port    = ctx.getPort();
   uint millis  = ctx.getWaitMS();
   
-  qDebug() << "Trying to connect to " << host << ":" << port;
+  qDebug() << "Trying to connect to " << host << ":" << port << ".";
   mySocket->connectToHost(host, port);
 
   if (mySocket->waitForConnected(millis)) {
@@ -48,7 +47,7 @@ void Client::connectAndSend(Context& ctx)
       return;
     }
 
-    qDebug() << "Trying to connect to " << host << ":" << port << " now.";
+    qDebug() << "Trying to connect to " << host << ":" << port << "now.";
     mySocket->connectToHost(host, port);
 
     if (mySocket->waitForConnected(millis)) {

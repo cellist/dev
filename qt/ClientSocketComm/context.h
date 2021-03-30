@@ -5,36 +5,26 @@
 #include <vector>
 #include <QObject>
 #include <QString>
+#include <QCoreApplication>
 #include <QRandomGenerator>
 
 class Context : public QObject {
   Q_OBJECT
 public:
-  Context();
+  Context(QCoreApplication& app, int argc, char* argv[]);
   ~Context();
 
-  void setPort(QString aPort);
-  uint getPort();
-
-  void setHost(QString aHost);
+  uint    getPort();
   QString getHost();
-
-  void setWaitMS(QString millis);
-  uint getWaitMS();
-
-  void setSleep(QString millis);
-  ulong getSleep();
-
-  void setInput(QString aFilename);
-  bool getNextMessage(std::string& msg);
-  uint getMsgIndex();
-  void setMsgMax(QString max);
-
-  void randomize();
+  uint    getWaitMS();
+  ulong   getSleep();
+  bool    getNextMessage(std::string& msg);
+  uint    getMsgIndex();
 
 private:
   bool digestMessages();
-
+  void processArgs(QCoreApplication& app, int argc, char* argv[]);
+  
   uint                     myPort;
   QString                  myHost;
   uint                     myWaitMS;
@@ -42,9 +32,8 @@ private:
   std::vector<std::string> myMsgs;
   uint                     myMsgIndex;
   ulong                    mySleepTime;
-  bool                     myRndFlag;
   uint                     myMaxMsgs;
-  QRandomGenerator        *myRnd;
+  QRandomGenerator*        myRnd;
 };
 
 #endif // _CONTEXT_H_

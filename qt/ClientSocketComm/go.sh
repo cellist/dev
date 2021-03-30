@@ -10,10 +10,10 @@ mkdir -p build &&\
 
 [ -f ./build/clntcomm ] &&\
     ./build/clntcomm \
-	-H 127.0.0.1 \
-	-I resources/telegrams.txt \
-	-M 100 \
-	-P 8080 \
-	-R \
-	-S 10 \
-	-W 3000
+	--host 127.0.0.1 \
+	--input-file resources/telegrams.txt \
+	--max-messages 100 \
+	--port 8080 \
+	--randomize \
+	--sleep-between-sends 10 \
+	--wait 3000
