@@ -12,7 +12,7 @@ Client::Client() {
 
 Client::~Client()
 {
-  qDebug() << "Client is garbage now.";
+  qWarning() << "Client is garbage now.";
 }
 
 void Client::sendAndDisengage(QString& host, Context& ctx) {
@@ -40,10 +40,10 @@ void Client::connectAndSend(Context& ctx)
   } else {
     QHostInfo lookup = QHostInfo::fromName(host);
     host = lookup.hostName();
-    qDebug() << "Connection timed out! Trying DNS lookup.";
+    qWarning() << "Connection timed out! Trying DNS lookup.";
 
     if(lookup.error() != QHostInfo::NoError) {
-      qDebug() << "The hostname DNS lookup has failed or IP address is invalid.";
+      qWarning() << "The hostname DNS lookup has failed or IP address is invalid.";
       return;
     }
 
@@ -53,7 +53,7 @@ void Client::connectAndSend(Context& ctx)
     if (mySocket->waitForConnected(millis)) {
       this->sendAndDisengage(host, ctx);
     } else {
-      qDebug() << "Connection timed out as well!";
+      qWarning() << "Connection timed out as well!";
     }
   }
 }

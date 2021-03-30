@@ -23,7 +23,7 @@ Context::Context(QCoreApplication& app, int argc, char* argv[]) {
 
 Context::~Context() {
 
-  qDebug() << "Context instance is garbage now.";
+  qWarning() << "Context instance is garbage now.";
 }
 
 uint Context::getPort() {
@@ -152,7 +152,7 @@ void Context::processArgs(QCoreApplication& app, int argc, char* argv[]) {
 
   if(parser.isSet(mopt)) {
     myMaxMsgs = parser.value(mopt).toInt();
-    qDebug() << "Sending no more than" << myMaxMsgs << "messages to host.";
+    qWarning() << "Sending no more than" << myMaxMsgs << "messages to host.";
   }
   
   if(parser.isSet(popt)) {
@@ -160,14 +160,14 @@ void Context::processArgs(QCoreApplication& app, int argc, char* argv[]) {
   }
 
   if(parser.isSet(ropt)) {
-    qDebug() << "Random mode is on.";
+    qWarning() << "Random mode is on.";
     myRnd = QRandomGenerator::system();
   }
   
   if(parser.isSet(sopt)) {
     mySleepTime = parser.value(sopt).toInt();
-    qDebug() << "Going to sleep for" << mySleepTime
-	     << "ms between message sends.";
+    qWarning() << "Going to sleep for" << mySleepTime
+	       << "ms between message sends.";
   }
   
   if(parser.isSet(wopt)) {
