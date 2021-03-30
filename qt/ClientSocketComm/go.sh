@@ -1,7 +1,7 @@
 #!/bin/sh
 
 rm -rf build TAGS
-etags *.cpp */*.cpp
+etags *.cpp
 mkdir -p build &&\
     cd build &&\
     env CXX=/usr/bin/clang++ cmake .. &&\
@@ -9,4 +9,11 @@ mkdir -p build &&\
     cd ..
 
 [ -f ./build/clntcomm ] &&\
-    ./build/clntcomm -f resources/telegrams.txt -h localhost -m 100 -p 8080 -r -s 10 -w 3000
+    ./build/clntcomm \
+	-H 127.0.0.1 \
+	-I resources/telegrams.txt \
+	-M 100 \
+	-P 8080 \
+	-R \
+	-S 10 \
+	-W 3000

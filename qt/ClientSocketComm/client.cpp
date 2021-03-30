@@ -16,36 +16,52 @@ Client::~Client()
   qDebug() << "Client is garbage now.";
 }
 
+void Client::sendAndDisengage(QString& host, Context& ctx) {
+
+  uint port = ctx.getPort();
+  
+  qDebug() << "Connected to " << host << ":" << port;
+  
+  this->sendMessages(ctx);
+  mySocket->close();
+  qDebug() << "Disconnected from " << host << ".";
+}
+  
 void Client::connectAndSend(Context& ctx)
 {
-  QHostInfo host = QHostInfo::fromName(ctx.getHost());
-  quint16 port   = ctx.getPort();
-  quint16 millis = ctx.getWaitMS();
-
-  if(host.error() != QHostInfo::NoError) {
-    qDebug() << "The hostname dns lookup has failed or ip address invalid.";
-    return;
-  }
+  QString host = ctx.getHost();
+  uint port    = ctx.getPort();
+  uint millis  = ctx.getWaitMS();
   
-  qDebug() << "Trying to connect to " << host.hostName() << ":" << port;
-
-  mySocket->connectToHost(host.hostName(), port);
+  qDebug() << "Trying to connect to " << host << ":" << port;
+  mySocket->connectToHost(host, port);
 
   if (mySocket->waitForConnected(millis)) {
-    qDebug() << "Connected to " << host.hostName() << ":" << port;
-
-    this->sendMessages(ctx);
-    mySocket->close();
-    qDebug() << "Disconnected from " << host.hostName() << ".";
-
+    this->sendAndDisengage(host, ctx);
   } else {
-    qDebug() << "Connection timed out!";
+    QHostInfo lookup = QHostInfo::fromName(host);
+    host = lookup.hostName();
+    qDebug() << "Connection timed out! Trying DNS lookup.";
+
+    if(lookup.error() != QHostInfo::NoError) {
+      qDebug() << "The hostname DNS lookup has failed or IP address is invalid.";
+      return;
+    }
+
+    qDebug() << "Trying to connect to " << host << ":" << port << " now.";
+    mySocket->connectToHost(host, port);
+
+    if (mySocket->waitForConnected(millis)) {
+      this->sendAndDisengage(host, ctx);
+    } else {
+      qDebug() << "Connection timed out as well!";
+    }
   }
 }
 
 void Client::sendMessages(Context& ctx) {
 
-  quint16 millis = ctx.getWaitMS();
+  uint millis = ctx.getWaitMS();
   unsigned long sleepTime = ctx.getSleep();
   unsigned int msgCount = 0;
 

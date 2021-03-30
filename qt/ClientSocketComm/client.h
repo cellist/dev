@@ -17,8 +17,9 @@ public:
 
 private:
   void sendMessages(Context& ctx);
+  void sendAndDisengage(QString& host, Context& ctx);
 
-  quint16     myPort;
+  uint        myPort;
   QString     myHost;
   QTcpSocket* mySocket;
 };

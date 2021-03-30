@@ -13,6 +13,6 @@ set(CMAKE_AUTOUIC ON)
 find_package(Qt5 COMPONENTS Core Network REQUIRED)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 
-add_executable(clntcomm context.cpp main.cpp client.cpp getopt.cpp)
+add_executable(clntcomm context.cpp main.cpp client.cpp)
 
 target_link_libraries(clntcomm Qt5::Core Qt5::Network)

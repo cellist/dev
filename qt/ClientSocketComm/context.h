@@ -13,37 +13,37 @@ public:
   Context();
   ~Context();
 
-  void setPort(quint16 aPort);
-  quint16 getPort();
+  void setPort(QString aPort);
+  uint getPort();
 
-  void setHost(char* aHost);
+  void setHost(QString aHost);
   QString getHost();
 
-  void setWaitMS(quint16 millis);
-  quint16 getWaitMS();
+  void setWaitMS(QString millis);
+  uint getWaitMS();
 
-  void setSleep(quint16 millis);
-  unsigned long getSleep();
+  void setSleep(QString millis);
+  ulong getSleep();
 
-  void setInput(char* aFilename);
+  void setInput(QString aFilename);
   bool getNextMessage(std::string& msg);
-  quint16 getMsgIndex();
-  void setMsgMax(quint16 max);
+  uint getMsgIndex();
+  void setMsgMax(QString max);
 
   void randomize();
 
 private:
   bool digestMessages();
 
-  quint16                  myPort;
+  uint                     myPort;
   QString                  myHost;
-  quint16                  myWaitMS;
-  std::string              myInputFilename;
+  uint                     myWaitMS;
+  QString                  myInputFilename;
   std::vector<std::string> myMsgs;
-  int                      myMsgIndex;
-  unsigned long            mySleepTime;
+  uint                     myMsgIndex;
+  ulong                    mySleepTime;
   bool                     myRndFlag;
-  quint16                  myMaxMsgs;
+  uint                     myMaxMsgs;
   QRandomGenerator        *myRnd;
 };
 
