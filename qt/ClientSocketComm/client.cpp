@@ -68,18 +68,15 @@ void Client::sendMessages(Context& ctx) {
   while (ctx.getNextMessage(msg)) {
     mySocket->write(msg.c_str());
     totalBytes += msg.size();
-    sprintf(buf, "Sending %lu bytes from message index %d, total: %.1fkB.", msg.size(), ctx.getMsgIndex(), totalBytes/1024.0);
+    sprintf(buf,
+	    "Sending %lu bytes from message index %d, total: %.1fkB.",
+	    msg.size(),
+	    ctx.getMsgIndex(),
+	    totalBytes/1024.0);
     qDebug() << buf;
     
-#if 0    
-    qDebug() << "Sending " << msg.size() << "bytes from message index"
-	     << ctx.getMsgIndex() << "with a total of"
-	     << totalBytes/1024.0 << "KB.";
-#endif
     mySocket->waitForBytesWritten(millis);
     qDebug() << "Message" << ++msgCount << "transferred.";
-
-    // qDebug() << "Reading" << mySocket->bytesAvailable() << "bytes.";
     mySocket->readAll();
 
     if(!stayConnected) {
