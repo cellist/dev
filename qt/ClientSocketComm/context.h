@@ -20,10 +20,12 @@ public:
   ulong   getSleep();
   bool    getNextMessage(std::string& msg);
   uint    getMsgIndex();
-
+  bool    keepSocketOpen();
+  
 private:
   bool digestMessages();
   void processArgs(QCoreApplication& app, int argc, char* argv[]);
+  bool handleComments(const std::string& in);
   
   uint                     myPort;
   QString                  myHost;
@@ -31,9 +33,11 @@ private:
   QString                  myInputFilename;
   std::vector<std::string> myMsgs;
   uint                     myMsgIndex;
+  bool                     myKeepSocketOpen;
   ulong                    mySleepTime;
   uint                     myMaxMsgs;
   QRandomGenerator*        myRnd;
+  char                     myCommentChar;
 };
 
 #endif // _CONTEXT_H_

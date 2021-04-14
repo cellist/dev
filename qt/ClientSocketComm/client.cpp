@@ -14,32 +14,23 @@ Client::~Client()
 {
   qWarning() << "Client is garbage now.";
 }
-
-void Client::sendAndDisengage(QString& host, Context& ctx) {
-
-  uint port = ctx.getPort();
-  
-  qDebug() << "Connected to " << host << ":" << port << ".";
-  
-  this->sendMessages(ctx);
-  mySocket->close();
-  qDebug() << "Disconnected from " << host << ".";
-}
   
 void Client::connectAndSend(Context& ctx)
 {
-  QString host = ctx.getHost();
-  uint port    = ctx.getPort();
   uint millis  = ctx.getWaitMS();
   
-  qDebug() << "Trying to connect to " << host << ":" << port << ".";
-  mySocket->connectToHost(host, port);
+  myHost = ctx.getHost();
+  myPort = ctx.getPort();
+  qDebug() << "Trying to connect to " << myHost << ":" << myPort << ".";
+  mySocket->connectToHost(myHost, myPort);
 
-  if (mySocket->waitForConnected(millis)) {
-    this->sendAndDisengage(host, ctx);
+  if(mySocket->waitForConnected(millis)) {
+    qDebug() << "Connected to " << myHost << ":" << myPort << ".";
+    this->sendMessages(ctx);
+    qDebug() << "Finally disconnected from " << myHost << ".";
   } else {
-    QHostInfo lookup = QHostInfo::fromName(host);
-    host = lookup.hostName();
+    QHostInfo lookup = QHostInfo::fromName(myHost);
+    myHost = lookup.hostName();
     qWarning() << "Connection timed out! Trying DNS lookup.";
 
     if(lookup.error() != QHostInfo::NoError) {
@@ -47,11 +38,13 @@ void Client::connectAndSend(Context& ctx)
       return;
     }
 
-    qDebug() << "Trying to connect to " << host << ":" << port << "now.";
-    mySocket->connectToHost(host, port);
+    qDebug() << "Trying to connect to " << myHost << ":" << myPort << "now.";
+    mySocket->connectToHost(myHost, myPort);
 
-    if (mySocket->waitForConnected(millis)) {
-      this->sendAndDisengage(host, ctx);
+    if(mySocket->waitForConnected(millis)) {
+      qDebug() << "Connected to " << myHost << ":" << myPort << ".";
+      this->sendMessages(ctx);
+      qDebug() << "Finally disconnected from " << myHost << ".";
     } else {
       qWarning() << "Connection timed out as well!";
     }
@@ -60,12 +53,16 @@ void Client::connectAndSend(Context& ctx)
 
 void Client::sendMessages(Context& ctx) {
 
-  uint millis = ctx.getWaitMS();
+  uint          millis = ctx.getWaitMS();
   unsigned long sleepTime = ctx.getSleep();
-  unsigned int msgCount = 0;
+  unsigned int  msgCount = 0;
+  std::string   msg;
+  bool          stayConnected = ctx.keepSocketOpen();
 
-  std::string msg;
-
+  qDebug() << "Socket connection will"
+	   << (stayConnected ? "not" : "")
+	   << "be closed between transmissions.";
+    
   while (ctx.getNextMessage(msg)) {
     mySocket->write(msg.c_str());
     qDebug() << "Sending " << msg.size() << "bytes from message index" << ctx.getMsgIndex() << ".";
@@ -75,8 +72,26 @@ void Client::sendMessages(Context& ctx) {
     // qDebug() << "Reading" << mySocket->bytesAvailable() << "bytes.";
     mySocket->readAll();
 
+    if(!stayConnected) {
+      mySocket->close();
+    }
+    
     if(sleepTime > 0) {
       QThread::msleep(sleepTime);
     }
+
+    if(!stayConnected) {
+      /* Reconnect for subsequent transmission */
+      mySocket->connectToHost(myHost, myPort);
+      
+      if(!mySocket->waitForConnected(millis)) {
+	qWarning() << "Cannot reconnect to " << myHost
+		   << " ! Transmission aborted.";
+	return;
+      } else {
+	qDebug() << "Reconnected successfully.";
+      }
+    }
   }
+  mySocket->close();
 }

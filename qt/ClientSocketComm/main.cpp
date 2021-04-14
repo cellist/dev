@@ -39,6 +39,7 @@ int main(int argc, char *argv[])
 
   client.connectAndSend(ctx);
 
+  std::cout << "Press <RETURN> to exit." << std::endl;
   std::cin.get();
   return 0;
 }

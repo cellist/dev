@@ -17,7 +17,6 @@ public:
 
 private:
   void sendMessages(Context& ctx);
-  void sendAndDisengage(QString& host, Context& ctx);
 
   uint        myPort;
   QString     myHost;

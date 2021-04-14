@@ -5,19 +5,21 @@
 
 #include <QCommandLineParser>
 #include <QtDebug>
+#include <stdio.h>
 #include "context.h"
 
 Context::Context(QCoreApplication& app, int argc, char* argv[]) {
 
   /* Set default values */
-  myHost          = "localhost";
+  myHost          = "127.0.0.1";
   myPort          = 8080;
   myWaitMS        = 5000;
-  myInputFilename = "msg.txt";
+  myInputFilename = "datagrams.txt";
   mySleepTime     = 0;
   myMaxMsgs       = 0;
   myRnd           = NULL;
-
+  myCommentChar   = '\0';
+  
   this->processArgs(app, argc, argv);
 }
 
@@ -42,10 +44,41 @@ ulong Context::getSleep() {
   return mySleepTime;
 }
 
+bool Context::keepSocketOpen() {
+  return myKeepSocketOpen;
+}
+
+bool Context::handleComments(const std::string& in) {
+
+  // Smartly detect comments and ignore them in input
+  if(myCommentChar != '\0' &&
+     in.at(0) == myCommentChar) {
+    // We have a comment line here, ignore
+    return false;
+  }
+
+  if(myMsgIndex == 0) {
+    std::string valid_chars("%;+*-:#!?$/\\");
+    int len = in.size();
+    
+    if(in.at(0) == in.at(len-1) &&
+       std::string::npos != valid_chars.find(in.at(0))) {
+      // We have a valid char that begins and ends the first line
+      myCommentChar = in.at(0);
+      qDebug() << "Input comment char is '" << in.at(0) << "'.";
+      return false;
+    }
+  }
+
+  // Not the first line any more - no comment indication
+  return true;
+}
+
 bool Context::digestMessages() {
 
   myMsgIndex = 0;
-
+  char buf[30];
+  
   // Open the File
   std::ifstream in(myInputFilename.toStdString());
   // Check if object is valid
@@ -58,12 +91,16 @@ bool Context::digestMessages() {
   // Read the next line from File until it reaches the end.
   while (std::getline(in, str))
     {
-      // Line contains string of length > 0 then save it in vector
-      if (str.size() > 0)
+      if (str.size() > 0  && handleComments(str)) {
 	myMsgs.push_back(str);
+	sprintf(buf, "datagram[%05d:%03lu]:", myMsgIndex, str.size());
+	qDebug() << buf << str.c_str();
+	myMsgIndex++;
+      }
     }
-  //Close The File
+
   in.close();
+  myMsgIndex = 0;
   return true;
 }
 
@@ -108,14 +145,18 @@ void Context::processArgs(QCoreApplication& app, int argc, char* argv[]) {
   parser.addVersionOption();
 
   QCommandLineOption hopt(QStringList() << "H" << "host",
-			  QCoreApplication::translate("main", "host to connect to, default: localhost"),
+			  QCoreApplication::translate("main", "host to connect to, default: 127.0.0.1"),
             QCoreApplication::translate("main", "host"));
   parser.addOption(hopt);
 
   QCommandLineOption iopt(QStringList() << "I" << "input-file",
-			  QCoreApplication::translate("main", "take messages from <file>, default: msg.txt"),
+			  QCoreApplication::translate("main", "take messages from <file>, default: datagrams.txt"),
             QCoreApplication::translate("main", "input-file"));
   parser.addOption(iopt);
+    
+  QCommandLineOption kopt(QStringList() << "K" << "keep-socket-open",
+			  QCoreApplication::translate("main", "keep the socket open between transmissions, default: re-open for every datagram sent across"));
+  parser.addOption(kopt);
 
   QCommandLineOption mopt(QStringList() << "M" << "max-messages",
 			  QCoreApplication::translate("main", "send at most <max> messages in total, default: 10000 (0: no limit)"),
@@ -150,6 +191,8 @@ void Context::processArgs(QCoreApplication& app, int argc, char* argv[]) {
     myInputFilename = parser.value(iopt);
   }
 
+  myKeepSocketOpen = parser.isSet(kopt);
+  
   if(parser.isSet(mopt)) {
     myMaxMsgs = parser.value(mopt).toInt();
     qWarning() << "Sending no more than" << myMaxMsgs << "messages to host.";
