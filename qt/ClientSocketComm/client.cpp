@@ -56,16 +56,26 @@ void Client::sendMessages(Context& ctx) {
   uint          millis = ctx.getWaitMS();
   unsigned long sleepTime = ctx.getSleep();
   unsigned int  msgCount = 0;
+  unsigned int  totalBytes = 0;
   std::string   msg;
   bool          stayConnected = ctx.keepSocketOpen();
-
+  char          buf[100];
+  
   qDebug() << "Socket connection will"
 	   << (stayConnected ? "not" : "")
 	   << "be closed between transmissions.";
     
   while (ctx.getNextMessage(msg)) {
     mySocket->write(msg.c_str());
-    qDebug() << "Sending " << msg.size() << "bytes from message index" << ctx.getMsgIndex() << ".";
+    totalBytes += msg.size();
+    sprintf(buf, "Sending %lu bytes from message index %d, total: %.1fkB.", msg.size(), ctx.getMsgIndex(), totalBytes/1024.0);
+    qDebug() << buf;
+    
+#if 0    
+    qDebug() << "Sending " << msg.size() << "bytes from message index"
+	     << ctx.getMsgIndex() << "with a total of"
+	     << totalBytes/1024.0 << "KB.";
+#endif
     mySocket->waitForBytesWritten(millis);
     qDebug() << "Message" << ++msgCount << "transferred.";
 
