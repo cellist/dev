@@ -73,7 +73,7 @@ void Client::sendMessages(Context& ctx) {
     totalBytes += msg.size();
     sprintf(buf,
 	    "Sending %lu bytes from message index %d, total: %.1fkB.",
-	    msg.size(),
+	    (unsigned long)msg.size(),
 	    ctx.getMsgIndex(),
 	    totalBytes/1024.0);
     qDebug() << buf;

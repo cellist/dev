@@ -93,7 +93,10 @@ bool Context::digestMessages() {
     {
       if (str.size() > 0  && handleComments(str)) {
 	myMsgs.push_back(str);
-	sprintf(buf, "datagram[%05d:%03lu]:", myMsgIndex, str.size());
+	sprintf(buf,
+		"datagram[%05d:%03lu]:",
+		myMsgIndex,
+		(unsigned long)str.size());
 	qDebug() << buf << str.c_str();
 	myMsgIndex++;
       }
