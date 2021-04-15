@@ -1,5 +1,6 @@
 #include "client.h"
 #include <stdlib.h>
+#include <QDateTime>
 #include <QHostInfo>
 #include <QThread>
 #include <QtDebug>
@@ -60,6 +61,8 @@ void Client::sendMessages(Context& ctx) {
   std::string   msg;
   bool          stayConnected = ctx.keepSocketOpen();
   char          buf[100];
+  QDateTime     now = QDateTime::currentDateTime();
+  qint64        deltaS;
   
   qDebug() << "Socket connection will"
 	   << (stayConnected ? "not" : "")
@@ -99,6 +102,15 @@ void Client::sendMessages(Context& ctx) {
 	qDebug() << "Reconnected successfully.";
       }
     }
+  }
+  deltaS = now.secsTo(QDateTime::currentDateTime());
+  if(deltaS > 0) {
+    sprintf(buf,
+	    "Transmitted %dkB in %lds [%.2fkB/s].",
+	    totalBytes/1024,
+	    (long)deltaS,
+	    totalBytes/1024.0/deltaS);
+    qDebug() << buf;
   }
   mySocket->close();
 }
