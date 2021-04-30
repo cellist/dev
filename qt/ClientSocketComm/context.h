@@ -18,6 +18,7 @@ public:
   QString getHost();
   uint    getWaitMS();
   ulong   getSleep();
+  bool    noMoreMessages();
   bool    getNextMessage(std::string& msg);
   uint    getMsgIndex();
   bool    keepSocketOpen();

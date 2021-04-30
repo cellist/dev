@@ -107,9 +107,14 @@ bool Context::digestMessages() {
   return true;
 }
 
+bool Context::noMoreMessages() {
+
+	return myMaxMsgs < 1;
+}
+
 bool Context::getNextMessage(std::string& msg) {
 
-  if (myMaxMsgs < 1) {
+  if (this->noMoreMessages()) {
     qDebug() << "Maximum number of messages sent, stopping now.";
 
     return false;

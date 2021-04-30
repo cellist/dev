@@ -82,6 +82,8 @@ void Client::sendMessages(Context& ctx) {
     qDebug() << "Message" << ++msgCount << "transferred.";
     mySocket->readAll();
 
+	if (ctx.noMoreMessages()) continue;
+
     if(!stayConnected) {
       mySocket->close();
     }
