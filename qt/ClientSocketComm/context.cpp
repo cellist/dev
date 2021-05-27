@@ -45,7 +45,7 @@ ulong Context::getSleep() {
 }
 
 bool Context::keepSocketOpen() {
-  return myKeepSocketOpen;
+	return myKeepSocketOpen;
 }
 
 bool Context::handleComments(const std::string& in) {
@@ -104,6 +104,11 @@ bool Context::digestMessages() {
 
   in.close();
   myMsgIndex = 0;
+
+  if (myConfirmTransmission) {
+	  std::cout << "Press <RETURN> to start datagram transmission." << std::endl;
+	  std::cin.get();
+  }
   return true;
 }
 
@@ -152,6 +157,10 @@ void Context::processArgs(QCoreApplication& app, int argc, char* argv[]) {
   parser.addHelpOption();
   parser.addVersionOption();
 
+  QCommandLineOption copt(QStringList() << "C" << "confirm",
+	  QCoreApplication::translate("main", "press any key to confirm transmission after input has been read, default: send immediately"));
+  parser.addOption(copt);
+
   QCommandLineOption hopt(QStringList() << "H" << "host",
 			  QCoreApplication::translate("main", "host to connect to, default: 127.0.0.1"),
             QCoreApplication::translate("main", "host"));
@@ -190,7 +199,9 @@ void Context::processArgs(QCoreApplication& app, int argc, char* argv[]) {
             QCoreApplication::translate("main", "msec"));
   parser.addOption(wopt);
   parser.process(app);
-  
+
+  myConfirmTransmission = parser.isSet(copt);
+
   if(parser.isSet(hopt)) {
     myHost = parser.value(hopt);
   }

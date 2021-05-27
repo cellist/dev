@@ -22,7 +22,7 @@ public:
   bool    getNextMessage(std::string& msg);
   uint    getMsgIndex();
   bool    keepSocketOpen();
-  
+
 private:
   bool digestMessages();
   void processArgs(QCoreApplication& app, int argc, char* argv[]);
@@ -34,6 +34,7 @@ private:
   QString                  myInputFilename;
   std::vector<std::string> myMsgs;
   uint                     myMsgIndex;
+  bool                     myConfirmTransmission;
   bool                     myKeepSocketOpen;
   ulong                    mySleepTime;
   uint                     myMaxMsgs;
