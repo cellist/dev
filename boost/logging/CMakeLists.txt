@@ -13,6 +13,9 @@ if(Boost_FOUND)
   add_executable(filtering filtering.cpp)
   target_link_libraries(filtering ${Boost_LIBRARIES})
   
+  add_executable(logfile logfile.cpp)
+  target_link_libraries(logfile ${Boost_LIBRARIES})
+  
   add_executable(trivial trivial.cpp)
   target_link_libraries(trivial ${Boost_LIBRARIES})
 endif()
