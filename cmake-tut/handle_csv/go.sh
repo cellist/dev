@@ -7,4 +7,5 @@ mkdir -p build &&\
     cmake --build . --config Debug &&\
     cd ..
 
+[ -e input.csv ]       && cat -n input.csv
 [ -e ./build/loadcsv ] && ./build/loadcsv input.csv

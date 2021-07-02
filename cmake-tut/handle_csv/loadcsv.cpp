@@ -10,11 +10,12 @@ enum class CSVState {
 		     QuotedQuote
 };
 
-typedef std::vector<std::vector<std::string>> table_t;
+typedef std::vector<std::string> row_t;
+typedef std::vector<row_t>       table_t;
 
-std::vector<std::string> readCSVRow(const std::string &row) {
+row_t readCSVRow(const std::string &row) {
   CSVState state = CSVState::UnquotedField;
-  std::vector<std::string> fields {""};
+  row_t fields {""};
   size_t i = 0; // index of the current field
   
   for (char c : row) {
@@ -71,15 +72,12 @@ table_t readCSV(std::istream &in) {
   return table;
 }
 
-void reverse_table(table_t& table) {
-  std::vector<std::string> fields;
+void dump_table(const table_t& table) {
   int col, row = 0;
-  
-  for(; !table.empty(); table.pop_back()) {
-    fields = table.back();
+
+  for(row_t fields : table) {
     col = 0;
-    for(; !fields.empty(); fields.pop_back()) {
-      std::string cell = fields.back();
+    for(std::string cell : fields) {
       std::cout << "(" << row << "," << col << "): " << cell << std::endl;
       col++;
     }
@@ -95,7 +93,7 @@ int main(int argc, char* argv[]) {
     table_t parsed = readCSV(csv_in);
     fb.close();
 
-    reverse_table(parsed);
+    dump_table(parsed);
   }
   
   return 0;
