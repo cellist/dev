@@ -18,4 +18,7 @@ if(Boost_FOUND)
   
   add_executable(trivial trivial.cpp)
   target_link_libraries(trivial ${Boost_LIBRARIES})
+  
+  add_executable(logger logger.cpp)
+  target_link_libraries(logger ${Boost_LIBRARIES})
 endif()
