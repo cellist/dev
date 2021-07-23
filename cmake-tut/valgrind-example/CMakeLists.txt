@@ -5,3 +5,5 @@ project(memoryLeak)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -Og")
 
 add_executable(memoryLeak memoryLeak.c)
+
+add_executable(simpleOptions simpleOptions.c)
