@@ -1,41 +1,12 @@
-#include <iostream>
-#include <pqxx/pqxx>
-
+/*
+* threads.cxx
+*/
+#include "work.h"
+ 
 int main()
-{  
-  try
-  {
-    // Connect to the database.  In practice we may have to pass some
-    // arguments to say where the database server is, and so on.
-    // The constructor parses options exactly like libpq's
-    // PQconnectdb/PQconnect, see:
-    // https://www.postgresql.org/docs/10/static/libpq-connect.html
-    pqxx::connection c;
-
-    // Start a transaction.  In libpqxx, you always work in one.
-    pqxx::work w(c);
-    pqxx::result result = w.exec(
-				 "SELECT id, transfrom, transto,"
-                                 " fromterm, toterm"
-				 " FROM translations"
-				 );
-    w.commit();
-
-    for (auto row = std::begin(result); row != std::end(result); row++)
-      {
-	std::cout << "| ";
-	for (auto field = std::begin(row); field != std::end(row); field++)
-	  {
-	    std::cout << field->c_str() << " | ";
-	  }
-	std::cout << std::endl;
-      }
-  }
-  catch (std::exception const &e)
-  {
-    std::cerr << e.what() << std::endl;
-    return 1;
-  }
-  
+{
+  Work* work = new Work();
+  work->go(); 
+  delete work; 
   return 0;
 }
