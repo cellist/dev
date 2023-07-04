@@ -21,13 +21,14 @@ int main()
 				 );
     w.commit();
 
-    for(auto const &row: result)
+    for (auto row = std::begin(result); row != std::end(result); row++)
       {
-	int col1 = row[0].as<int>();
-	std::string col2 = row[1].as<std::string>();
-	std::string col3 = row[2].as<std::string>();
-	
-	std::cout << col1 << "|" << col2 << "|" << col3 << std::endl;
+	std::cout << "| ";
+	for (auto field = std::begin(row); field != std::end(row); field++)
+	  {
+	    std::cout << field->c_str() << " | ";
+	  }
+	std::cout << std::endl;
       }
   }
   catch (std::exception const &e)
