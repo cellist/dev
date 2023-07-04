@@ -3,6 +3,7 @@
 
 DROP TABLE public.examples;
 DROP TABLE public.tags;
+DROP TABLE public.translations;
 
 CREATE TABLE public.examples (
     id     SERIAL      PRIMARY KEY,
@@ -14,6 +15,14 @@ CREATE TABLE public.tags (
     id       SERIAL      PRIMARY KEY,
     aconcept VARCHAR(25) NOT NULL,
     atag     VARCHAR(25) NOT NULL
+);
+
+CREATE TABLE public.translations (
+    id       SERIAL      PRIMARY KEY,
+    transfrom VARCHAR(20) NOT NULL,
+    transto   VARCHAR(20) NOT NULL,
+    fromterm  VARCHAR(30) NOT NULL,
+    toterm    VARCHAR(30) NOT NULL
 );
 
 INSERT INTO
@@ -105,3 +114,27 @@ VALUES
     ('ReactOS','free'),
     ('Mac OS','operating-system'),
     ('Mac OS','commercial');
+
+INSERT INTO
+    public.translations (transfrom,transto,fromterm,toterm)
+VALUES
+    ('Latin','German','alea','Wuerfel'),
+    ('Latin','German','deus','Gott'),
+    ('Latin','German','machina','Maschine'),
+    ('Latin','German','aeroplanus','Flugzeug'),
+    ('English', 'Latin', 'peace', 'pax'),
+    ('English', 'Latin', 'cock', 'gallus'),
+    ('English', 'Latin', 'dog', 'canis'),
+    ('English', 'Latin', 'horse', 'equus'),
+    ('English', 'Latin', 'room', 'camera'),
+    ('English', 'Latin', 'table', 'mensa'),
+    ('French', 'English', 'matin', 'morning'),
+    ('French', 'English', 'soir', 'evening'),
+    ('French', 'English', 'amour', 'love'),
+    ('French', 'English', 'eau', 'water'),
+    ('French', 'English', 'cygne', 'swan'),
+    ('German', 'French', 'Dirigent', 'conducteur'),
+    ('German', 'French', 'Schauspielerin', 'actrice'),
+    ('German', 'French', 'Welt', 'monde'),
+    ('German', 'French', 'Tod', 'mort'),
+    ('German', 'French', 'Hund', 'cien');
