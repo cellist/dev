@@ -12,7 +12,7 @@ CREATE TABLE public.examples (
 
 CREATE TABLE public.tags (
     id       SERIAL      PRIMARY KEY,
-    anobject VARCHAR(15) NOT NULL,
+    aconcept VARCHAR(25) NOT NULL,
     atag     VARCHAR(25) NOT NULL
 );
 
@@ -24,8 +24,9 @@ VALUES
     ('key3','val3');
 
 INSERT INTO
-    public.tags (anobject,atag)
+    public.tags (aconcept,atag)
 VALUES
+    ('fruit','concrete'),
     ('banana','fruit'),
     ('banana','colour-yellow'),
     ('pineapple','fruit'),
@@ -44,6 +45,7 @@ VALUES
     ('date','colour-brown'),
     ('blueberry','fruit'),
     ('blueberry','colour-blue'),
+    ('music-instrument','concrete'),
     ('violin','music-instrument'),
     ('violin','semi-polyphonic'),
     ('viola','music-instrument'),
@@ -60,9 +62,11 @@ VALUES
     ('flute','monophonic'),
     ('clarinet','music-instrument'),
     ('clarinet','monophonic'),
+    ('electronic-device','concrete'),
     ('smartphone','electronic-device'),
     ('laptop','electronic-device'),
     ('tablet pc','electronic-device'),
+    ('programming-language','abstract'),
     ('C++','programming-language'),
     ('C++','compiler'),
     ('C++','object-oriented'),
@@ -84,6 +88,7 @@ VALUES
     ('Pascal','procedural'),
     ('Prolog','programming-language'),
     ('Prolog','interpreter'),
+    ('operating-system','abstract'),
     ('MS Windows','operating-system'),
     ('MS Windows','commercial'),
     ('IBM OS/2','operating-system'),
@@ -100,4 +105,3 @@ VALUES
     ('ReactOS','free'),
     ('Mac OS','operating-system'),
     ('Mac OS','commercial');
-

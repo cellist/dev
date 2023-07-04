@@ -15,7 +15,7 @@ int main()
     // Start a transaction.  In libpqxx, you always work in one.
     pqxx::work w(c);
     pqxx::result result = w.exec(
-				 "SELECT id, anobject, atag "
+				 "SELECT id, aconcept, atag "
 				 " FROM tags"
 				 " WHERE atag NOT LIKE '%e%'"
 				 );
