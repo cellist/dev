@@ -10,7 +10,17 @@ int main()
     // The constructor parses options exactly like libpq's
     // PQconnectdb/PQconnect, see:
     // https://www.postgresql.org/docs/10/static/libpq-connect.html
-    pqxx::connection c;
+    pqxx::connection c(
+		       "user=<username> "
+		       "host=<hostname> "
+		       "password=<secret> "
+		       "dbname=<database name>"
+		       );
+
+    std::cout << "Connected as " << c.username()
+	      << "/" << c.dbname()
+	      << "@" << c.hostname()
+	      << ":" << c.port() << std::endl;
 
     // Start a transaction.  In libpqxx, you always work in one.
     pqxx::work w(c);
