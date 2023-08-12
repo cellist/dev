@@ -34,34 +34,30 @@ void CustomWindow::toggleDetails() {
 void CustomWindow::setupUI() {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
-    eventLabel = new QLabel("Events:", this);
-    layout->addWidget(eventLabel);
+    QFormLayout *formLayout = new QFormLayout();
 
     eventLineEdit = new QLineEdit(this);
     eventLineEdit->setReadOnly(true);
-    layout->addWidget(eventLineEdit);
-
-    messageLabel = new QLabel("Message:", this);
-    layout->addWidget(messageLabel);
+    formLayout->addRow("Event:", eventLineEdit);
 
     messageLineEdit = new QLineEdit(this);
     messageLineEdit->setReadOnly(true);
-    layout->addWidget(messageLineEdit);
+    formLayout->addRow("Message:", messageLineEdit);
+
+    detailsTextEdit = new QTextEdit(this);
+
+    statusLineEdit = new QLineEdit(this);
+    statusLineEdit->setReadOnly(true);
+    formLayout->addRow("Status:", statusLineEdit);
+
+    layout->addLayout(formLayout);
 
     detailsToggleBtn = new QPushButton("Show Details", this);
     connect(detailsToggleBtn, &QPushButton::clicked, this, &CustomWindow::toggleDetails);
     layout->addWidget(detailsToggleBtn);
 
-    detailsTextEdit = new QTextEdit(this);
     layout->addWidget(detailsTextEdit);
     detailsTextEdit->setVisible(false);
-
-    statusLabel = new QLabel("Status:", this);
-    layout->addWidget(statusLabel);
-
-    statusLineEdit = new QLineEdit(this);
-    statusLineEdit->setReadOnly(true);
-    layout->addWidget(statusLineEdit);
 
     setLayout(layout);
 

@@ -3,8 +3,7 @@
 
 #include <QtWidgets/QWidget>
 #include <QtWidgets/QVBoxLayout>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QLabel>
+#include <QtWidgets/QFormLayout>
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QTextEdit>
 #include <QtWidgets/QLineEdit>
@@ -26,13 +25,10 @@ private slots:
 private:
     void setupUI();
 
-    QLabel *eventLabel;
-    QLabel *messageLabel;
-    QPushButton *detailsToggleBtn;
-    QTextEdit *detailsTextEdit;
-    QLabel *statusLabel;
     QLineEdit *eventLineEdit;
     QLineEdit *messageLineEdit;
+    QTextEdit *detailsTextEdit;
+    QPushButton *detailsToggleBtn;
     QLineEdit *statusLineEdit;
     bool detailsCollapsed;
 };
