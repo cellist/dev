@@ -1,0 +1,13 @@
+#include <QtWidgets/QApplication>
+#include "customwindow.h"
+
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+
+    CustomWindow window;
+    window.setWindowTitle("Qt6 Custom Window");
+    window.setGeometry(100, 100, 600, 400);
+    window.show();
+
+    return app.exec();
+}
