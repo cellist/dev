@@ -6,6 +6,8 @@ Fetches all devices from buyzoxs.de (via sitemap) and cross-references them
 with the known /e/OS supported devices list. Fetches live prices and conditions
 via internal APIs using cloudscraper to bypass Cloudflare protection.
 
+Includes SQLite tracking to report price drops, new conditions, and stock changes.
+
 Usage:
     py eos_buyzoxs_crawler.py                    # full run, print report
     py eos_buyzoxs_crawler.py --json             # also dump results to eos_results.json
@@ -20,11 +22,12 @@ Dependencies:
 import argparse
 import json
 import re
+import sqlite3
 import time
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 import requests
 import cloudscraper
@@ -36,6 +39,7 @@ from thefuzz import fuzz
 # ---------------------------------------------------------------------------
 
 SITEMAP_URL = "https://www.buyzoxs.de/sitemap.xml"
+DB_PATH = "eos_buyzoxs.db"
 
 # Initialize cloudscraper to bypass Cloudflare 403 Forbidden errors
 scraper = cloudscraper.create_scraper(
@@ -173,6 +177,60 @@ EOS_DEVICES: list[EosDevice] = [
     EosDevice("Motorola", "Edge 30 Neo",   "miami",   "community", ["edge-30-neo"]),
     EosDevice("Motorola", "Edge 40 Pro",   "rtwo",    "community", ["edge-40"]),
 ]
+
+# ---------------------------------------------------------------------------
+# Database Functions
+# ---------------------------------------------------------------------------
+
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS device_variants (
+            brand TEXT,
+            model TEXT,
+            codename TEXT,
+            status TEXT,
+            android_versions TEXT,
+            zustand TEXT,
+            price TEXT,
+            url TEXT,
+            last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (brand, model, zustand)
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+def load_previous_state() -> Dict[tuple, Dict[str, str]]:
+    """Loads the previous state as {(brand, model): {zustand: price}}"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT brand, model, zustand, price FROM device_variants")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    state = defaultdict(dict)
+    for brand, model, zustand, price in rows:
+        state[(brand, model)][zustand] = price
+    return dict(state)
+
+def save_to_db(results: list[MatchResult]):
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    for r in results:
+        # Delete old variants for this specific model to cleanly handle disappeared ones
+        cursor.execute("DELETE FROM device_variants WHERE brand=? AND model=?", (r.brand, r.eos_device.model))
+        for v in r.variants:
+            url = f"https://www.buyzoxs.de/kaufen/{r.slug}.html"
+            cursor.execute("""
+                INSERT INTO device_variants 
+                (brand, model, codename, status, android_versions, zustand, price, url)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (r.brand, r.eos_device.model, r.eos_device.codename, r.eos_device.status, 
+                  r.eos_device.android_versions, v.zustand, v.price, url))
+    conn.commit()
+    conn.close()
 
 # ---------------------------------------------------------------------------
 # Step 1 – Fetch buyzoxs.de device list from sitemap
@@ -356,7 +414,6 @@ def print_report(results: list[MatchResult]) -> None:
         print(f"\n  {brand} ({len(entries)} model(s))")
         for r in entries:
             icon = STATUS_ICON.get(r.eos_device.status, "[?]")
-            # Show best variant and count of others
             if r.variants:
                 best_v = r.variants[0]
                 extra_count = len(r.variants) - 1
@@ -463,7 +520,13 @@ def fetch_product_data(category_id: str) -> list[dict]:
         return products
     except Exception: return []
 
-def enrich_with_prices_and_conditions(results: list[MatchResult], delay: float = 0.5) -> list[MatchResult]:
+def parse_price_to_float(price_str: str) -> float:
+    try:
+        return float(price_str.replace(" EUR", "").replace(",", "."))
+    except ValueError:
+        return 0.0
+
+def enrich_with_prices_and_conditions(results: list[MatchResult], previous_state: Dict[tuple, Dict[str, str]], delay: float = 0.5) -> list[MatchResult]:
     total = len(results)
     kept: list[MatchResult] = []
 
@@ -513,22 +576,56 @@ def enrich_with_prices_and_conditions(results: list[MatchResult], delay: float =
         # Sort acceptable variants by condition rank (best first), then by price (lowest first)
         acceptable.sort(key=lambda v: (_CONDITION_RANK.get(v.get("variant_name", ""), 6), v.get("es_price", 999999)))
         
-        # Deduplicate variants (same condition and price)
-        seen_variants = set()
+        # FIXED: Deduplicate variants by keeping ONLY the best (lowest) price for each condition.
+        # This guarantees exactly one row per condition per device, satisfying the DB UNIQUE constraint.
+        seen_zustand = set()
         unique_variants = []
         for v in acceptable:
             zustand = v.get("variant_name", "Unknown")
-            price_eur = v.get("es_price", 0) / 100.0
-            price_str = f"{price_eur:.2f}".replace(".", ",") + " EUR"
-            
-            key = (zustand, price_str)
-            if key not in seen_variants:
-                seen_variants.add(key)
+            if zustand not in seen_zustand:
+                seen_zustand.add(zustand)
+                price_eur = v.get("es_price", 0) / 100.0
+                price_str = f"{price_eur:.2f}".replace(".", ",") + " EUR"
                 unique_variants.append(Variant(zustand=zustand, price=price_str))
 
         r.variants = unique_variants
-        best_v = r.variants[0]
-        print(f"{best_v.zustand} @ {best_v.price} ({len(r.variants)} options)")
+        
+        # --- CHANGE DETECTION & REPORTING ---
+        key = (r.brand, r.eos_device.model)
+        old_variants = previous_state.get(key, {})
+        
+        changes = []
+        if not old_variants:
+            changes.append("🆕 NEW DEVICE")
+        else:
+            for v in r.variants:
+                if v.zustand not in old_variants:
+                    changes.append(f"➕ NEW: {v.zustand} @ {v.price}")
+                else:
+                    old_price = old_variants[v.zustand]
+                    if old_price != v.price:
+                        old_val = parse_price_to_float(old_price)
+                        new_val = parse_price_to_float(v.price)
+                        if new_val < old_val and old_val > 0:
+                            changes.append(f"📉 PRICE DROP: {v.zustand} {old_price} -> {v.price}")
+                        elif new_val > old_val:
+                            changes.append(f"📈 PRICE INCREASE: {v.zustand} {old_price} -> {v.price}")
+                        else:
+                            changes.append(f"🔄 PRICE CHANGED: {v.zustand} {old_price} -> {v.price}")
+            
+            for old_zustand, old_price in old_variants.items():
+                if old_zustand not in [v.zustand for v in r.variants]:
+                    changes.append(f"❌ DISAPPEARED: {old_zustand} (was {old_price})")
+        
+        # Print changes
+        if changes:
+            print()
+            for change in changes:
+                print(f"      {change}")
+        else:
+            best_v = r.variants[0]
+            print(f"{best_v.zustand} @ {best_v.price} ({len(r.variants)} options, no changes)")
+            
         kept.append(r)
         time.sleep(delay)
 
@@ -601,8 +698,6 @@ def save_ods(results: list[MatchResult], filename: str = "eos_results.ods") -> N
     
     for r in sorted_results:
         url = f"https://www.buyzoxs.de/kaufen/{r.slug}.html"
-        
-        # If no variants were found, create a placeholder
         variants_to_export = r.variants if r.variants else [Variant(zustand="Unknown", price="See website")]
         
         for v in variants_to_export:
@@ -661,6 +756,10 @@ def main() -> None:
     parser.add_argument("--ods", action="store_true", help="Also create eos_results.ods spreadsheet")
     args = parser.parse_args()
 
+    # Initialize database and load previous state
+    init_db()
+    previous_state = load_previous_state()
+
     results = run_crawler(threshold=args.min_score)
     print_report(results)
 
@@ -668,8 +767,13 @@ def main() -> None:
         print("\n[*] Fetching /e/OS Android versions from doc.e.foundation...")
         enrich_with_versions(results)
         print("\n[*] Fetching prices and conditions from buyzoxs.de...")
-        results = enrich_with_prices_and_conditions(results)
+        results = enrich_with_prices_and_conditions(results, previous_state)
         print(f"\n  {len(results)} device(s) remain after condition filtering.")
+        
+        # Save the new state to the database
+        print("\n[*] Saving updated state to SQLite database...")
+        save_to_db(results)
+        print("  Database updated successfully.")
 
     if args.json:
         output = [
