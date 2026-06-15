@@ -24,7 +24,7 @@ import time
 import xml.etree.ElementTree as ET
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, List
 
 import requests
 import cloudscraper
@@ -50,7 +50,7 @@ HEADERS = {
 REQUEST_TIMEOUT = 15
 
 # ---------------------------------------------------------------------------
-# /e/OS known supported devices
+# Data Structures
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -64,6 +64,23 @@ class EosDevice:
 
     def search_text(self) -> str:
         return f"{self.brand} {self.model}".lower()
+
+@dataclass
+class Variant:
+    zustand: str
+    price: str
+
+@dataclass
+class MatchResult:
+    slug: str
+    display_name: str
+    eos_device: EosDevice
+    brand: str
+    variants: List[Variant] = field(default_factory=list)
+
+# ---------------------------------------------------------------------------
+# /e/OS known supported devices
+# ---------------------------------------------------------------------------
 
 EOS_DEVICES: list[EosDevice] = [
     # ---- BQ ----
@@ -251,15 +268,6 @@ def match_eos_device(slug: str) -> Optional[EosDevice]:
 # Step 3 – Run the full cross-reference
 # ---------------------------------------------------------------------------
 
-@dataclass
-class MatchResult:
-    slug: str
-    display_name: str
-    eos_device: EosDevice
-    brand: str
-    zustand: str = ""
-    price: str = ""
-
 def search_buyzoxs_for_device(dev: EosDevice, threshold: int = 80) -> Optional[MatchResult]:
     query = f"{dev.brand} {dev.model}"
     api_headers = {**HEADERS, "Content-Type": "application/json", "Accept": "application/json", "Referer": "https://www.buyzoxs.de/"}
@@ -294,7 +302,6 @@ def run_crawler(threshold: int = 80) -> list[MatchResult]:
     buyzoxs_devices = fetch_buyzoxs_devices()
     results: list[MatchResult] = []
 
-    # If sitemap failed, seed results with known EOS_DEVICES so we can still fetch prices
     if not buyzoxs_devices:
         print("[*] Sitemap unavailable. Using known /e/OS device slugs to fetch prices...")
         for dev in EOS_DEVICES:
@@ -349,7 +356,14 @@ def print_report(results: list[MatchResult]) -> None:
         print(f"\n  {brand} ({len(entries)} model(s))")
         for r in entries:
             icon = STATUS_ICON.get(r.eos_device.status, "[?]")
-            print(f"     {icon:<12} {r.eos_device.model:<30} [{r.eos_device.codename}]")
+            # Show best variant and count of others
+            if r.variants:
+                best_v = r.variants[0]
+                extra_count = len(r.variants) - 1
+                extra_text = f" (+{extra_count} more)" if extra_count > 0 else ""
+                print(f"     {icon:<12} {r.eos_device.model:<30} [{r.eos_device.codename}] -> {best_v.zustand} @ {best_v.price}{extra_text}")
+            else:
+                print(f"     {icon:<12} {r.eos_device.model:<30} [{r.eos_device.codename}] -> No stock/price data")
     print("=" * 60)
 
 # ---------------------------------------------------------------------------
@@ -376,7 +390,7 @@ def fetch_eos_version(codename: str) -> str:
     except Exception: pass
     return ""
 
-def enrich_with_versions(results: list["MatchResult"], delay: float = 0.4) -> None:
+def enrich_with_versions(results: list[MatchResult], delay: float = 0.4) -> None:
     seen_codenames: set[str] = set()
     total = len({r.eos_device.codename for r in results})
     done = 0
@@ -423,7 +437,8 @@ def fetch_article_by_asin(asin: str) -> list[dict]:
         if not skus: return []
         variants = [{"variant_name": s.get("zustand_text", "").title() or str(s.get("zustand", "")),
                      "es_price": int(float(s.get("preis", 0) or 0) * 100),
-                     "quantity": int(float(s.get("anz", 0) or 0))} for s in skus]
+                     "quantity": int(float(s.get("anz", 0) or 0)),
+                     "lastInStock": s.get("lastInStock", False)} for s in skus]
         return [{"title": data.get("result", {}).get("article", {}).get("title", ""), "variants": variants}]
     except Exception: return []
 
@@ -439,9 +454,12 @@ def fetch_product_data(category_id: str) -> list[dict]:
                 price = v.get("es_price", 0)
                 try:
                     price_val = float(price)
-                    if isinstance(price, float) or (isinstance(price, str) and '.' in price): v["es_price"] = int(price_val * 100)
-                    else: v["es_price"] = int(price_val)
-                except Exception: v["es_price"] = 0
+                    if isinstance(price, float) or (isinstance(price, str) and '.' in str(price)): 
+                        v["es_price"] = int(price_val * 100)
+                    else: 
+                        v["es_price"] = int(price_val)
+                except Exception: 
+                    v["es_price"] = 0
         return products
     except Exception: return []
 
@@ -453,20 +471,21 @@ def enrich_with_prices_and_conditions(results: list[MatchResult], delay: float =
         print(f"   [{idx}/{total}] {r.eos_device.model} ({r.slug})...", end=" ", flush=True)
         
         asin = _extract_asin(r.slug)
-        if asin: products = fetch_article_by_asin(asin)
+        if asin: 
+            products = fetch_article_by_asin(asin)
         else:
             cat_id = fetch_category_id(r.slug)
             if not cat_id:
-                print("(category ID not found – keeping)")
-                r.zustand, r.price = "Unknown", "See website"
+                print("(category ID not found)")
+                r.variants = [Variant(zustand="Unknown", price="See website")]
                 kept.append(r)
                 time.sleep(delay)
                 continue
             products = fetch_product_data(cat_id)
             
         if not products:
-            print("(no product data – keeping)")
-            r.zustand, r.price = "Unknown", "See website"
+            print("(no product data)")
+            r.variants = [Variant(zustand="Unknown", price="See website")]
             kept.append(r)
             time.sleep(delay)
             continue
@@ -478,25 +497,38 @@ def enrich_with_prices_and_conditions(results: list[MatchResult], delay: float =
                     all_variants.append(v)
 
         if not all_variants:
-            print("(no variants – keeping)")
-            r.zustand, r.price = "Unknown", "See website"
+            print("(no variants in stock)")
+            r.variants = [Variant(zustand="Unknown", price="See website")]
             kept.append(r)
             time.sleep(delay)
             continue
 
         acceptable = [v for v in all_variants if v.get("variant_name", "") not in EXCLUDED_CONDITIONS]
         if not acceptable:
-            print(f"(only { {v.get('variant_name', '?') for v in all_variants} } – excluded)")
+            names = {v.get('variant_name', '?') for v in all_variants}
+            print(f"(only {names} – excluded)")
             time.sleep(delay)
             continue
 
-        best = min(acceptable, key=lambda v: _CONDITION_RANK.get(v.get("variant_name", ""), 6))
-        zustand = best.get("variant_name", "Unknown")
-        price_eur = best.get("es_price", 0) / 100.0
-        price_str = f"{price_eur:.2f}".replace(".", ",") + " EUR"
+        # Sort acceptable variants by condition rank (best first), then by price (lowest first)
+        acceptable.sort(key=lambda v: (_CONDITION_RANK.get(v.get("variant_name", ""), 6), v.get("es_price", 999999)))
+        
+        # Deduplicate variants (same condition and price)
+        seen_variants = set()
+        unique_variants = []
+        for v in acceptable:
+            zustand = v.get("variant_name", "Unknown")
+            price_eur = v.get("es_price", 0) / 100.0
+            price_str = f"{price_eur:.2f}".replace(".", ",") + " EUR"
+            
+            key = (zustand, price_str)
+            if key not in seen_variants:
+                seen_variants.add(key)
+                unique_variants.append(Variant(zustand=zustand, price=price_str))
 
-        r.zustand, r.price = zustand, price_str
-        print(f"{zustand} @ {price_str}")
+        r.variants = unique_variants
+        best_v = r.variants[0]
+        print(f"{best_v.zustand} @ {best_v.price} ({len(r.variants)} options)")
         kept.append(r)
         time.sleep(delay)
 
@@ -536,8 +568,8 @@ def save_ods(results: list[MatchResult], filename: str = "eos_results.ods") -> N
     header_text_style.addElement(TextProperties(color="#ffffff", fontweight="bold"))
     doc.automaticstyles.addElement(header_text_style)
 
-    # Added 4cm for the Codename column
-    col_widths = ["3cm", "6cm", "5cm", "4cm", "3cm", "4cm", "4cm", "10cm"]
+    # 8 columns: Brand, Device, Codename, /e/OS Android Version, Build Type, Zustand, Price (EUR), buyzoxs.de URL
+    col_widths = ["3cm", "6cm", "4cm", "5cm", "3cm", "4cm", "4cm", "10cm"]
     col_style_names = []
     for i, w in enumerate(col_widths):
         cs = Style(name=f"Col{i}", family="table-column")
@@ -546,9 +578,9 @@ def save_ods(results: list[MatchResult], filename: str = "eos_results.ods") -> N
         col_style_names.append(f"Col{i}")
 
     table = Table(name="eos-buyzoxs")
-    for i, cs_name in enumerate(col_style_names): table.addElement(TableColumn(stylename=cs_name))
+    for i, cs_name in enumerate(col_style_names): 
+        table.addElement(TableColumn(stylename=cs_name))
 
-    # Added "Codename" to headers
     headers = ["Brand", "Device", "Codename", "/e/OS Android Version", "Build Type", "Zustand", "Price (EUR)", "buyzoxs.de URL"]
     header_row = TableRow()
     for h in headers:
@@ -565,53 +597,58 @@ def save_ods(results: list[MatchResult], filename: str = "eos_results.ods") -> N
     table.addElement(header_rows_block)
 
     sorted_results = sorted(results, key=lambda r: (r.brand, r.eos_device.model))
-    for idx, r in enumerate(sorted_results):
-        row_style = alt_style if idx % 2 == 0 else normal_style
+    total_rows_count = 1 # Start with header
+    
+    for r in sorted_results:
         url = f"https://www.buyzoxs.de/kaufen/{r.slug}.html"
         
-        # Added r.eos_device.codename to row_data
-        row_data = [
-            r.brand, 
-            r.eos_device.model, 
-            r.eos_device.codename, 
-            r.eos_device.android_versions or "See doc.e.foundation", 
-            r.eos_device.status, 
-            r.zustand or "See website", 
-            r.price or "See website", 
-            url
-        ]
-
-        data_row = TableRow()
-        for col_idx, value in enumerate(row_data):
-            # URL is now index 7
-            cell_style = url_style if col_idx == 7 else row_style
+        # If no variants were found, create a placeholder
+        variants_to_export = r.variants if r.variants else [Variant(zustand="Unknown", price="See website")]
+        
+        for v in variants_to_export:
+            row_style = alt_style if total_rows_count % 2 == 0 else normal_style
             
-            # Price is now index 6
-            if col_idx == 6 and value not in ("See website", ""):
-                try:
-                    float_val = float(value.replace(" EUR", "").replace(",", "."))
-                    cell = TableCell(stylename=cell_style, valuetype="float", value=str(float_val))
-                    cell.addElement(P(text=f"{float_val:.2f}"))
-                except ValueError:
+            row_data = [
+                r.brand, 
+                r.eos_device.model, 
+                r.eos_device.codename, 
+                r.eos_device.android_versions or "See doc.e.foundation", 
+                r.eos_device.status, 
+                v.zustand, 
+                v.price, 
+                url
+            ]
+
+            data_row = TableRow()
+            for col_idx, value in enumerate(row_data):
+                cell_style = url_style if col_idx == 7 else row_style
+                
+                # Price is index 6
+                if col_idx == 6 and value not in ("See website", ""):
+                    try:
+                        float_val = float(value.replace(" EUR", "").replace(",", "."))
+                        cell = TableCell(stylename=cell_style, valuetype="float", value=str(float_val))
+                        cell.addElement(P(text=f"{float_val:.2f}"))
+                    except ValueError:
+                        cell = TableCell(stylename=cell_style, valuetype="string")
+                        cell.addElement(P(text=value))
+                else:
                     cell = TableCell(stylename=cell_style, valuetype="string")
                     cell.addElement(P(text=value))
-            else:
-                cell = TableCell(stylename=cell_style, valuetype="string")
-                cell.addElement(P(text=value))
-            data_row.addElement(cell)
-        table.addElement(data_row)
+                data_row.addElement(cell)
+            table.addElement(data_row)
+            total_rows_count += 1
 
     doc.spreadsheet.addElement(table)
 
-    total_rows = 1 + len(sorted_results)
-    col_letter = chr(ord("A") + len(headers) - 1)
+    col_letter = chr(ord("A") + len(headers) - 1) # 'H'
     db_ranges = DatabaseRanges()
-    db_range = DatabaseRange(name="__AutoFilter__", targetrangeaddress=f"eos-buyzoxs.A1:{col_letter}{total_rows}", displayfilterbuttons="true")
+    db_range = DatabaseRange(name="__AutoFilter__", targetrangeaddress=f"eos-buyzoxs.A1:{col_letter}{total_rows_count}", displayfilterbuttons="true")
     db_ranges.addElement(db_range)
     doc.spreadsheet.addElement(db_ranges)
 
     doc.save(filename)
-    print(f"\n  Spreadsheet saved to {filename}  ({len(sorted_results)} rows)")
+    print(f"\n  Spreadsheet saved to {filename}  ({total_rows_count - 1} data rows)")
 
 # ---------------------------------------------------------------------------
 # Entry point
@@ -637,22 +674,25 @@ def main() -> None:
     if args.json:
         output = [
             {
-                "buyzoxs_slug": r.slug, 
-                "buyzoxs_url": f"https://www.buyzoxs.de/kaufen/{r.slug}.html", 
-                "brand": r.brand, 
-                "eos_model": r.eos_device.model, 
-                "eos_codename": r.eos_device.codename, 
-                "eos_status": r.eos_device.status, 
-                "eos_android_versions": r.eos_device.android_versions, 
-                "zustand": r.zustand, 
-                "price": r.price
-            } for r in results
+                "buyzoxs_slug": r.slug,
+                "buyzoxs_url": f"https://www.buyzoxs.de/kaufen/{r.slug}.html",
+                "brand": r.brand,
+                "eos_model": r.eos_device.model,
+                "eos_codename": r.eos_device.codename,
+                "eos_status": r.eos_device.status,
+                "eos_android_versions": r.eos_device.android_versions,
+                "variants": [
+                    {"zustand": v.zustand, "price": v.price}
+                    for v in (r.variants if r.variants else [Variant(zustand="Unknown", price="See website")])
+                ]
+            }
+            for r in results
         ]
-        with open("eos_results.json", "w", encoding="utf-8") as f: 
+        with open("eos_results.json", "w", encoding="utf-8") as f:
             json.dump(output, f, indent=2, ensure_ascii=False)
         print(f"\n  Results saved to eos_results.json")
 
-    if args.ods: 
+    if args.ods:
         save_ods(results, "eos_results.ods")
 
 if __name__ == "__main__":
