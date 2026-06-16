@@ -80,21 +80,13 @@ def get_all_matching_products() -> Dict[str, Tuple[EosDevice, str]]:
                             
         print(f"      Page {page}: Found {found_on_page} new matching products.")
             
-    # TARGETED DEBUG: Print ONLY slugs that look like tablets we care about
-    target_keywords = ['samsung', 'galaxy', 'tab', 'pixel', 'volla', 'teracube', 'xiaomi', 'fairphone']
-    relevant_slugs = [s for s in all_slugs if any(kw in s.lower() for kw in target_keywords)]
-    
-    print(f"\n   [DEBUG] Found {len(relevant_slugs)} potentially relevant tablet slugs:")
-    for slug in sorted(relevant_slugs):
-        # Check if it matched
-        is_matched = slug in matched_products
-        status = "✅ MATCHED" if is_matched else "❌ MISSED"
-        print(f"      {status}: {slug}")
-    print()
-            
     return matched_products
 
 def scrape_product_page(product_url: str) -> List[dict]:
+    """
+    Visits the individual product page and accurately extracts conditions and prices
+    by parsing the specific HTML structure of AfB Shop's condition cards.
+    """
     variants = []
     try:
         resp = scraper.get(product_url, headers=HEADERS, timeout=REQUEST_TIMEOUT)
@@ -102,32 +94,48 @@ def scrape_product_page(product_url: str) -> List[dict]:
             return []
             
         soup = BeautifulSoup(resp.text, 'html.parser')
-        text = soup.get_text(" ", strip=True)
         
-        conditions = ["Neuware", "OVP geöffnet", "Wie neu", "Sehr gut", "Gut", "Fair", "Akzeptabel"]
-        
-        for cond in conditions:
-            start = 0
-            while True:
-                cond_idx = text.find(cond, start)
-                if cond_idx == -1:
+        # STRATEGY 1: Parse the grading icon blocks (100% accurate)
+        # AfB Shop uses <img> tags with 'gradingIcons' in the src and the condition in the 'alt' attribute.
+        # The price is located in a sibling/parent div within the same product card.
+        for img in soup.find_all('img', src=lambda x: x and 'gradingIcons' in x):
+            cond_name = img.get('alt', '').strip()
+            if not cond_name:
+                continue
+                
+            # Traverse up the DOM to find the card container that holds the price
+            parent = img.parent
+            for _ in range(6): # Go up max 6 levels to find the card
+                if not parent:
                     break
-                
-                # Strict forward matching (120 chars)
-                search_window = text[cond_idx : cond_idx + 120]
-                price_match = price_regex.search(search_window)
-                
+                parent_text = parent.get_text(" ", strip=True)
+                price_match = price_regex.search(parent_text)
                 if price_match:
                     price_str = price_match.group(1)
-                    if not any(v['condition'] == cond for v in variants):
+                    if not any(v['condition'] == cond_name for v in variants):
                         variants.append({
-                            "condition": cond,
+                            "condition": cond_name,
                             "price": price_str
                         })
-                    break 
+                    break # Found the price for this condition, move to next img
+                parent = parent.parent
                 
-                start = cond_idx + len(cond)
-                    
+        # STRATEGY 2: Fallback to plain text search if AfB Shop changes their HTML structure
+        if not variants:
+            text = soup.get_text(" ", strip=True)
+            conditions = ["Neuware", "OVP geöffnet", "Wie neu", "Sehr gut", "Gut", "Fair", "Akzeptabel"]
+            for cond in conditions:
+                cond_idx = text.find(cond)
+                if cond_idx != -1:
+                    search_window = text[cond_idx : cond_idx + 250]
+                    price_match = price_regex.search(search_window)
+                    if price_match:
+                        if not any(v['condition'] == cond for v in variants):
+                            variants.append({
+                                "condition": cond,
+                                "price": price_match.group(1)
+                            })
+                            
     except Exception as e:
         print(f"\n   [DEBUG] Error scraping {product_url}: {e}")
         
