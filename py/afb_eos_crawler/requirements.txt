@@ -1,0 +1,5 @@
+cloudscraper
+requests
+beautifulsoup4
+thefuzz
+odfpy
